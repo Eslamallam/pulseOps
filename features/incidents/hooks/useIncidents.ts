@@ -9,5 +9,6 @@ export function useIncidents() {
     queryFn: getIncidents,
     refetchInterval: 10000,
     refetchIntervalInBackground: true,
+    staleTime: 0,
   });
 }

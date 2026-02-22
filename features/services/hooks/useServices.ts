@@ -1,26 +1,33 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getServices } from "../api/getServices";
+import { Service } from "../types";
 
 export function useServices() {
-  return useQuery({
+  const queryClient = useQueryClient();
+
+  const query = useQuery<Service[]>({
     queryKey: ["services"],
     queryFn: getServices,
-
-    // refresh every 10s
     refetchInterval: 10000,
-
-    // 🔴 THIS IS THE IMPORTANT LINE
     refetchIntervalInBackground: true,
-
-    // treat data as stale quickly
     staleTime: 0,
-
-    // retry failures
     retry: 2,
-
-    // don't wait for window focus
     refetchOnWindowFocus: true,
   });
+
+  // v5 way — react to data change
+  useEffect(() => {
+    if (!query.data) return;
+
+    // whenever services update → refresh incidents
+    queryClient.invalidateQueries({
+      queryKey: ["incidents"],
+    });
+
+  }, [query.data, queryClient]);
+
+  return query;
 }

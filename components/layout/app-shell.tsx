@@ -4,7 +4,10 @@ import { ReactNode } from "react";
 import Sidebar from "./sidebar";
 import Topbar from "./topbar";
 
+import { useIncidentAlerts } from "@/features/incidents/hooks/useIncidentAlerts";
+
 export default function AppShell({ children }: { children: ReactNode }) {
+  useIncidentAlerts();
   return (
     <div className="h-screen flex bg-muted/40">
       <Sidebar />

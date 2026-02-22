@@ -5,6 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Service } from "../types";
 
+import {
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Activity,
+  Clock3,
+  Percent,
+} from "lucide-react";
+import AnimatedNumber from "@/components/ui/animated-number";
+import { usePrevious } from "../hooks/usePrevious";
+
 /* Status styling */
 function statusConfig(status: Service["status"]) {
   switch (status) {
@@ -33,14 +44,32 @@ function errorRateColor(rate: number) {
   return "text-foreground";
 }
 
+function StatusIcon({ status }: { status: Service["status"] }) {
+  if (status === "healthy")
+    return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+
+  if (status === "degraded")
+    return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
+
+  return <XCircle className="h-4 w-4 text-red-600" />;
+}
+
 export default function ServiceCard({ service }: { service: Service }) {
   const status = statusConfig(service.status);
 
+  const prevError = usePrevious(service.errorRate);
+  const increasing = prevError && service.errorRate > prevError;
+
   return (
     <Link href={`/services/${service.id}`} className="block">
-      <Card className="cursor-pointer hover:shadow-md transition-shadow">
+      <Card
+        className={`cursor-pointer hover:shadow-md transition-all duration-300
+          ${service.status !== "healthy" ? "animate-pulse border-red-400/40" : ""}
+        `}
+      >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-base font-semibold">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <StatusIcon status={service.status} />
             {service.name}
           </CardTitle>
 
@@ -50,40 +79,33 @@ export default function ServiceCard({ service }: { service: Service }) {
         </CardHeader>
 
         <CardContent className="space-y-4">
-
           {/* Error Rate (Most Important Metric) */}
           <div className="flex items-baseline justify-between">
-            <span className="text-sm text-muted-foreground">
-              Error rate
-            </span>
+            <span className="text-sm text-muted-foreground">Error rate</span>
 
-            <span className={`text-lg font-semibold ${errorRateColor(service.errorRate)}`}>
-              {service.errorRate.toFixed(2)}%
-            </span>
+            <AnimatedNumber value={service.errorRate} decimals={2} suffix="%" />
+            {prevError !== undefined && (
+              <span
+                className={`text-xs ${increasing ? "text-red-500" : "text-green-500"}`}
+              >
+                {increasing ? "▲ increasing" : "▼ recovering"}
+              </span>
+            )}
           </div>
 
           {/* Latency */}
           <div className="flex items-baseline justify-between">
-            <span className="text-sm text-muted-foreground">
-              Latency
-            </span>
+            <span className="text-sm text-muted-foreground">Latency</span>
 
-            <span className="font-medium">
-              {service.avgLatencyMs} ms
-            </span>
+            <AnimatedNumber value={service.avgLatencyMs} suffix=" ms" />
           </div>
 
           {/* Uptime */}
           <div className="flex items-baseline justify-between">
-            <span className="text-sm text-muted-foreground">
-              24h uptime
-            </span>
+            <span className="text-sm text-muted-foreground">24h uptime</span>
 
-            <span className="font-medium">
-              {service.uptime24h.toFixed(2)}%
-            </span>
+            <AnimatedNumber value={service.uptime24h} decimals={2} suffix="%" />
           </div>
-
         </CardContent>
       </Card>
     </Link>
