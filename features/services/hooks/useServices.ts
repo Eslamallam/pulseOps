@@ -22,8 +22,8 @@ export function useServices() {
   useEffect(() => {
     if (!query.data) return;
 
-    // whenever services update → refresh incidents
-    queryClient.invalidateQueries({
+    // whenever services update → refresh incidents immediately
+    queryClient.refetchQueries({
       queryKey: ["incidents"],
     });
 

@@ -124,3 +124,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes highlight {
+  0% {
+    background-color: hsl(var(--primary) / 0.2);
+    transform: translateX(-4px);
+  }
+  50% {
+    background-color: hsl(var(--primary) / 0.15);
+  }
+  100% {
+    background-color: transparent;
+    transform: translateX(0);
+  }
+}
+
+.animate-highlight {
+  animation: highlight 1.5s ease-out;
+}

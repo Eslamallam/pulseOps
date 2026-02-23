@@ -20,6 +20,14 @@ export function evaluateIncidents(services: Service[]): Incident[] {
       });
     }
 
+    // UPDATE incident severity when service status changes
+    if (service.status !== "healthy" && existing) {
+      const updatedSeverity = service.status === "outage" ? "critical" : "major";
+      if (existing.severity !== updatedSeverity) {
+        existing.severity = updatedSeverity;
+      }
+    }
+
     // RESOLVE incident
     if (service.status === "healthy" && existing) {
       activeIncidents = activeIncidents.filter(i => i.serviceId !== service.id);
