@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,22 +55,124 @@ function StatusIcon({ status }: { status: Service["status"] }) {
   return <XCircle className="h-4 w-4 text-red-600" />;
 }
 
+/* Vital sign pulse indicator */
+function PulseIndicator({ status }: { status: Service["status"] }) {
+  const config = {
+    healthy: {
+      color: "bg-green-500",
+      animation: "",
+    },
+    degraded: {
+      color: "bg-amber-500",
+      animation: "animate-pulse-slow",
+    },
+    outage: {
+      color: "bg-red-500",
+      animation: "animate-pulse-fast",
+    },
+  };
+
+  const { color, animation } = config[status];
+
+  return (
+    <span
+      className={`inline-block h-2 w-2 rounded-full ${color} ${animation}`}
+      aria-label={`${status} status indicator`}
+    />
+  );
+}
+
+/* Trend indicator for metrics */
+function TrendIndicator({ 
+  current, 
+  previous, 
+  higherIsBetter = false,
+  threshold = 0.01
+}: { 
+  current: number; 
+  previous: number | undefined;
+  higherIsBetter?: boolean;
+  threshold?: number;
+}) {
+  if (previous === undefined) return null;
+
+  const diff = current - previous;
+  const isStable = Math.abs(diff) < threshold;
+
+  if (isStable) {
+    return (
+      <span className="text-xs text-muted-foreground ml-1">
+        — stable
+      </span>
+    );
+  }
+
+  const isIncreasing = diff > 0;
+  const isImproving = higherIsBetter ? isIncreasing : !isIncreasing;
+
+  if (isImproving) {
+    return (
+      <span className="text-xs text-green-500 ml-1">
+        ▼ {higherIsBetter ? "improving" : "recovering"}
+      </span>
+    );
+  }
+
+  return (
+    <span className="text-xs text-red-500 ml-1">
+      ▲ {isIncreasing ? "rising" : "dropping"}
+    </span>
+  );
+}
+
 export default function ServiceCard({ service }: { service: Service }) {
   const status = statusConfig(service.status);
 
+  // Track previous values for trend detection
   const prevError = usePrevious(service.errorRate);
-  const increasing = prevError && service.errorRate > prevError;
+  const prevLatency = usePrevious(service.avgLatencyMs);
+  const prevUptime = usePrevious(service.uptime24h);
+  const prevStatus = usePrevious(service.status);
+
+  // Status change highlight
+  const [statusChanged, setStatusChanged] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (prevStatus && prevStatus !== service.status) {
+      setStatusChanged(true);
+      const timer = setTimeout(() => setStatusChanged(false), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [service.status, prevStatus]);
+
+  // Border glow for issues
+  const borderGlow = service.status === "outage" 
+    ? "border-red-500/20 [color:rgba(239,68,68,0.25)]" 
+    : service.status === "degraded" 
+    ? "border-amber-500/20 [color:rgba(245,158,11,0.25)]" 
+    : "";
 
   return (
-    <Link href={`/services/${service.id}`} className="block">
+    <Link href={`/services/${service.id}`} className="block group">
       <Card
-        className={`cursor-pointer hover:shadow-md transition-all duration-300
-          ${service.status !== "healthy" ? "animate-pulse border-red-400/40" : ""}
+        className={`cursor-pointer hover:shadow-md transition-all duration-300 relative
+          ${borderGlow && `${borderGlow} animate-glow-border`}
+          ${statusChanged ? "animate-highlight" : ""}
         `}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
+        {/* Hover overlay */}
+        {isHovered && (
+          <div className="absolute inset-0 bg-primary/5 rounded-lg pointer-events-none transition-opacity duration-200 flex items-center justify-center">
+            <span className="text-xs font-medium text-primary">View details →</span>
+          </div>
+        )}
+
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <StatusIcon status={service.status} />
+            <PulseIndicator status={service.status} />
             {service.name}
           </CardTitle>
 
@@ -82,29 +185,41 @@ export default function ServiceCard({ service }: { service: Service }) {
           {/* Error Rate (Most Important Metric) */}
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-muted-foreground">Error rate</span>
-
-            <AnimatedNumber value={service.errorRate} decimals={2} suffix="%" />
-            {prevError !== undefined && (
-              <span
-                className={`text-xs ${increasing ? "text-red-500" : "text-green-500"}`}
-              >
-                {increasing ? "▲ increasing" : "▼ recovering"}
-              </span>
-            )}
+            <div className="flex items-baseline gap-1">
+              <AnimatedNumber value={service.errorRate} decimals={2} suffix="%" />
+              <TrendIndicator 
+                current={service.errorRate} 
+                previous={prevError}
+                threshold={0.1}
+              />
+            </div>
           </div>
 
           {/* Latency */}
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-muted-foreground">Latency</span>
-
-            <AnimatedNumber value={service.avgLatencyMs} suffix=" ms" />
+            <div className="flex items-baseline gap-1">
+              <AnimatedNumber value={service.avgLatencyMs} suffix=" ms" />
+              <TrendIndicator 
+                current={service.avgLatencyMs} 
+                previous={prevLatency}
+                threshold={5}
+              />
+            </div>
           </div>
 
           {/* Uptime */}
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-muted-foreground">24h uptime</span>
-
-            <AnimatedNumber value={service.uptime24h} decimals={2} suffix="%" />
+            <div className="flex items-baseline gap-1">
+              <AnimatedNumber value={service.uptime24h} decimals={2} suffix="%" />
+              <TrendIndicator 
+                current={service.uptime24h} 
+                previous={prevUptime}
+                higherIsBetter={true}
+                threshold={0.05}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

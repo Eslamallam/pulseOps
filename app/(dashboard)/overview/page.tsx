@@ -2,7 +2,8 @@
 
 import PageContainer from "@/components/layout/page-container";
 
-import SystemStatusBanner from "@/features/services/components/SystemStatusBanner";
+import StatusHeader from "@/features/services/components/StatusHeader";
+import ActivityStrip from "@/features/services/components/ActivityStrip";
 import ServiceCard from "@/features/services/components/ServiceCard";
 import ServiceCardSkeleton from "@/features/services/components/ServiceCardSkeleton";
 
@@ -19,16 +20,21 @@ export default function OverviewPage() {
   const { data: incidents } = useIncidents();
 
   // derive global system health
- const health = services ? getSystemStatus(services) : { status: "healthy", affected: [] };
+ const health = services ? getSystemStatus(services) : { status: "healthy" as const, affected: [] };
 
   return (
     <PageContainer title="Overview">
 
-      {/* 1️⃣ Global System Status */}
-      <SystemStatusBanner health={health} />
+      {/* 1️⃣ System Status Header */}
+      <StatusHeader health={health} />
 
-      {/* 2️⃣ Services Section */}
-      <section className="space-y-3">
+      {/* 2️⃣ Activity Strip - Recent System Behavior */}
+      <div className="mt-6">
+        <ActivityStrip health={health} />
+      </div>
+
+      {/* 3️⃣ Services Grid - Component Health */}
+      <section className="space-y-4 mt-8">
         <h2 className="text-lg font-semibold">Services</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -54,12 +60,12 @@ export default function OverviewPage() {
         )}
       </section>
 
-      {/* 3️⃣ Active Incidents Section */}
-      <section className="space-y-3">
+      {/* 4️⃣ Active Incidents */}
+      <section className="space-y-4 mt-8">
         <h2 className="text-lg font-semibold">Active Incidents</h2>
 
         {incidents?.length === 0 && (
-          <div className="rounded-lg border p-8 text-center">
+          <div className="rounded-lg border p-8 text-center bg-card">
             <p className="text-muted-foreground">
               No active incidents 🎉
             </p>
