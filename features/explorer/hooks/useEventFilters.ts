@@ -1,7 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { Event } from "../types";
 
 export function useEventFilters(events: Event[] | undefined) {
+  const searchParams = useSearchParams();
+  
   // Filter states
   const [serviceFilter, setServiceFilter] = useState<Event["service"] | "all">("all");
   const [levelFilter, setLevelFilter] = useState<Event["level"] | "all">("all");
@@ -13,6 +16,30 @@ export function useEventFilters(events: Event[] | undefined) {
   // Track new events for highlighting
   const [newEventIds, setNewEventIds] = useState<Set<string>>(new Set());
   const previousEventCountRef = useRef(0);
+  
+  // Track if we should highlight the filter (for 3 seconds)
+  const [highlightFilter, setHighlightFilter] = useState(false);
+
+  // Read URL parameters on mount
+  useEffect(() => {
+    const serviceParam = searchParams.get("service");
+    const highlightParam = searchParams.get("highlight");
+    
+    if (serviceParam) {
+      setServiceFilter(serviceParam as Event["service"]);
+      
+      if (highlightParam === "true") {
+        setHighlightFilter(true);
+        
+        // Remove highlight after 3 seconds
+        const timer = setTimeout(() => {
+          setHighlightFilter(false);
+        }, 3000);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [searchParams]);
 
   // Track new events and highlight them
   useEffect(() => {
@@ -74,5 +101,6 @@ export function useEventFilters(events: Event[] | undefined) {
     setAutoScroll,
     filteredEvents,
     newEventIds,
+    highlightFilter,
   };
 }

@@ -21,6 +21,7 @@ export function EventStreamViewer() {
     setAutoScroll,
     filteredEvents,
     newEventIds,
+    highlightFilter,
   } = useEventFilters(events);
 
   // Auto-scroll to top when new events arrive
@@ -45,6 +46,7 @@ export function EventStreamViewer() {
         setSearchQuery={setSearchQuery}
         autoScroll={autoScroll}
         setAutoScroll={setAutoScroll}
+        highlightFilter={highlightFilter}
       />
 
       {/* Event Count */}

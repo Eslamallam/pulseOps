@@ -11,6 +11,7 @@ interface FilterControlsProps {
   setSearchQuery: (query: string) => void;
   autoScroll: boolean;
   setAutoScroll: (autoScroll: boolean) => void;
+  highlightFilter?: boolean;
 }
 
 const services: Array<Event["service"]> = [
@@ -32,6 +33,7 @@ export function FilterControls({
   setSearchQuery,
   autoScroll,
   setAutoScroll,
+  highlightFilter = false,
 }: FilterControlsProps) {
   return (
     <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b pb-3">
@@ -44,7 +46,11 @@ export function FilterControls({
           <select
             value={serviceFilter}
             onChange={(e) => setServiceFilter(e.target.value as Event["service"] | "all")}
-            className="px-3 py-1.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            className={`px-3 py-1.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-ring transition-all ${
+              highlightFilter 
+                ? "ring-2 ring-primary shadow-lg shadow-primary/20 animate-pulse" 
+                : ""
+            }`}
           >
             <option value="all">All services</option>
             {services.map((service) => (
