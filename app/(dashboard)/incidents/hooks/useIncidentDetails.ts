@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useIncidents } from "./useIncidents";
+import { useIncidents } from "@/features/incidents/hooks/useIncidents";
 import { generateIncidentEvents } from "@/mocks/events";
 
 export function useIncidentDetails(id: string) {
